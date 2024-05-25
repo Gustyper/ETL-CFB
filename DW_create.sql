@@ -1,7 +1,7 @@
-Drop schema if exists dw_cfb cascade;
-create schema dw_cfb;
+DROP SCHEMA IF EXISTS dw_cfb CASCADE;
+CREATE SCHEMA dw_cfb;
 
-set search_path=dw_cfb;
+SET search_path=dw_cfb;
 
 CREATE TABLE Cliente
 (
@@ -20,7 +20,7 @@ CREATE TABLE Endereco
   RuaCliente VARCHAR(255) NOT NULL,
   Municipio VARCHAR(255) NOT NULL,
   UF CHAR(2) NOT NULL,
-  EnderecoKey INT NOT NULL ,
+  EnderecoKey INT NOT NULL,
   PRIMARY KEY (EnderecoKey)
 );
 
@@ -32,7 +32,7 @@ CREATE TABLE Medicamento
   DtValidade DATE NOT NULL,
   DescrProd TEXT NOT NULL,
   Categoria VARCHAR(255) NOT NULL,
-  ProdutoKey INT NOT NULL ,
+  ProdutoKey INT NOT NULL,
   PRIMARY KEY (ProdutoKey)
 );
 
@@ -44,13 +44,13 @@ CREATE TABLE Calendario
   Mes INT NOT NULL,
   Ano INT NOT NULL,
   Trimestre INT NOT NULL,
-  CalendarioKey INT NOT NULL ,
+  CalendarioKey INT NOT NULL,
   PRIMARY KEY (CalendarioKey)
 );
 
 CREATE TABLE Receita
 (
-  ReceitaID INT NOT NULL ,
+  ReceitaID INT NOT NULL,
   ValorReceita DECIMAL(10,2) NOT NULL,
   QuantMedicamentos INT NOT NULL,
   ProdutoKey INT NOT NULL,
