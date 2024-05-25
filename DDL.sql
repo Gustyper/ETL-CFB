@@ -1,3 +1,8 @@
+Drop schema if exists oper_cfb cascade;
+create schema oper_cfb;
+
+set search_path=oper_cfb;
+
 CREATE TABLE Estoque
 (
   Quantidade INT NOT NULL,
@@ -120,8 +125,7 @@ CREATE TABLE CliCompraProd
   IDProduto INT NOT NULL,
   PRIMARY KEY (IDCompra),
   FOREIGN KEY (IDCliente) REFERENCES Cliente(IDCliente),
-  FOREIGN KEY (IDProduto) REFERENCES Produto(IDProduto),
-  UNIQUE (IDCliente, IDProduto)
+  FOREIGN KEY (IDProduto) REFERENCES Produto(IDProduto)
 );
 
 CREATE TABLE ProdCateg

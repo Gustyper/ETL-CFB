@@ -1,7 +1,3 @@
-set search_path=dw_cfb;
-
--- TODO truncar do dw aqui
-
 set search_path=oper_cfb;
 
 -- dimensão Cliente
@@ -24,17 +20,17 @@ CREATE TABLE Endereco_Completo
   Bairro VARCHAR(255) NOT NULL,
   RuaCliente VARCHAR(255) NOT NULL,
   Municipio VARCHAR(255) NOT NULL,
-  UF CHAR(2) NOT NULL,
+  UF VARCHAR(100) NOT NULL,
   IDUF CHAR(2) NOT NULL,
   IDMunicipio INT NOT NULL
 );
 
-INSERT INTO Endereco_Completo
+INSERT INTO Endereco_Completo (Bairro, RuaCliente, Municipio, UF, IDUF, IDMunicipio)
 select 
     c.Bairro,
     c.Rua,
     m.NomeMunicipio,
-    u.NomeUF
+    u.NomeUF,
     u.IDUF,
     m.IDMunicipio
 from
@@ -54,7 +50,6 @@ from
     Endereco_Completo;
 
 -- dimensao Medicamento
--- Rever: Categoria não é única por produto!
 INSERT INTO dw_cfb.Medicamento
 select
     p.IDProduto,
@@ -62,13 +57,27 @@ select
     p.NomeProduto,
     p.DtValidade,
     p.DescrProd,
-    p.
     gen_random_uuid()
 from
-    Produto p, ...
+    Produto p;
+
+-- Categorias
+INSERT INTO dw_cfb.Categoria
+select 
+    ctg.IDCategoria,
+    ctg.NomeCategoria
+from 
+    Categoria ctg;
+
+INSERT INTO dw_cfb.ProdCateg
+select
+    dwm.ProdutoKey,
+    cat.IDCategoria
+from 
+    ProdCateg cat inner join dw_cfb.Medicamento dwm on dwm.ProdutoID=cat.IDProduto;
 
 -- dimensao Data
-insert into dw_cfb.Calendario
+INSERT INTO dw_cfb.Calendario
 select
 	a.datacompleta,
 	a.diasemana,
@@ -87,7 +96,7 @@ from (
         extract(year from t.DataCompra) as ano
     from 
         CliCompraProd t 
-    where cast(t.DataCompra as date) not in (select DataCompleta from dw_zagi.Calendario)
+    where cast(t.DataCompra as date) not in (select DataCompleta from dw_cfb.Calendario)
         ) as a;
 
 --
@@ -96,31 +105,31 @@ from (
 
 alter table CliCompraProd alter column DataCompra SET data type timestamp with time zone;
 
-insert into dw_cfb.ReceitaDetalhada
-select
+INSERT INTO dw_cfb.ReceitaDetalhada
+SELECT
     t.IDCompra,
     (p.PrecVenda * t.Quantidade) as ValorReceita,
     t.Quantidade,
-    t.DataCompra as hora,
+    CAST(t.DataCompra AS TIME) as HoraPedido, 
     dwp.ProdutoKey,
     dwe.EnderecoKey,
     dwc.ClienteKey,
     dwcal.CalendarioKey
-from
-    CliCompraProd t inner join Produto p on t.IDProduto = p.IDProduto
-    -- inner join -- LIDAR COM A CATEGORIA AINDA
-    inner join Cliente c on t.IDCliente = t.IDCliente
-    inner join Endereco_Completo e on c.Rua = e.RuaCliente and 
-                                    c.Bairro = e.Bairro and
-                                    c.IDMunicipio = e.IDMunicipio and
-                                    c.IDUF = e.IDUF
-    inner join dw_cfb.Cliente dwc on dwc.ClienteID = c.IDCliente
-    inner join dw_cfb.Endereco dwe on dwe.EnderecoID = e.EnderecoID
-    inner join dw_cfb.Medicamento dwp on dwp.ProdutoID = p.IDProduto
-    inner join dw_cfb.Calendario dwcal on dwcal.DataCompleta=cast(t.DataCompra as date)
+FROM
+    CliCompraProd t 
+    INNER JOIN Produto p ON t.IDProduto = p.IDProduto
+    INNER JOIN Cliente c ON t.IDCliente = c.IDCliente
+    INNER JOIN Endereco_Completo e ON c.Rua = e.RuaCliente 
+                                    AND c.Bairro = e.Bairro 
+                                    AND c.IDMunicipio = e.IDMunicipio 
+                                    AND c.IDUF = e.IDUF
+    INNER JOIN dw_cfb.Cliente dwc ON dwc.ClienteID = c.IDCliente
+    INNER JOIN dw_cfb.Endereco dwe ON dwe.EnderecoID = e.EnderecoID
+    INNER JOIN dw_cfb.Medicamento dwp ON dwp.ProdutoID = p.IDProduto
+    INNER JOIN dw_cfb.Calendario dwcal ON dwcal.DataCompleta = CAST(t.DataCompra AS DATE)
 EXCEPT
 SELECT
-    ReceitaID,
+    IDPedido,
     ValorReceita,
     QuantMedicamentos,
     HoraPedido,
@@ -128,6 +137,4 @@ SELECT
     EnderecoKey,
     ClienteKey,
     CalendarioKey
-FROM dw_cfb;
-
-    
+FROM dw_cfb.ReceitaDetalhada;
