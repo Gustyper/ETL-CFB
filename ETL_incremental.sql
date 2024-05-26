@@ -122,7 +122,6 @@ SELECT
     r.IDPedido AS PedidoID,
     r.QuantMedicamentos,
     p.NomeProduto,
-    p.Categoria AS NomeCategoriaProduto,
     p.PrecVenda AS PrecoProduto,
     c.Ano,
     c.DataCompleta,
