@@ -17,9 +17,10 @@ CREATE TABLE Cliente
 -- Endereco Dimension
 CREATE TABLE Endereco
 (
-  EnderecoID INT NOT NULL,
   Bairro VARCHAR(255) NOT NULL,
   RuaCliente VARCHAR(255) NOT NULL,
+  IDMunicipio INT NOT NULL,
+  IDUF CHAR(2) NOT NULL,
   Municipio VARCHAR(255) NOT NULL,
   UF VARCHAR(100) NOT NULL,
   EnderecoKey UUID NOT NULL,

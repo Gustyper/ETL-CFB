@@ -11,43 +11,39 @@ select
 from
 	Cliente c left join Cliente_TelefoneCliente t on c.IDCliente = t.IDCliente;
 
--- Criar tabela que tem todos os endereços
-CREATE SEQUENCE endereco_id_seq; -- Cria IDs p endereço
-
-CREATE TABLE Endereco_Completo
-(
-  EnderecoID INT NOT NULL DEFAULT nextval('endereco_id_seq'),
-  Bairro VARCHAR(255) NOT NULL,
-  RuaCliente VARCHAR(255) NOT NULL,
-  Municipio VARCHAR(255) NOT NULL,
-  UF VARCHAR(100) NOT NULL,
-  IDUF CHAR(2) NOT NULL,
-  IDMunicipio INT NOT NULL
-);
-
-INSERT INTO Endereco_Completo (Bairro, RuaCliente, Municipio, UF, IDUF, IDMunicipio)
-select 
-    c.Bairro,
-    c.Rua,
-    m.NomeMunicipio,
-    u.NomeUF,
-    u.IDUF,
-    m.IDMunicipio
-from
-    Cliente c left join Municipio m on c.IDMunicipio = m.IDMunicipio
-    full join UF u on c.IDUF = u.IDUF;
-
 -- dimensao Endereco
-INSERT INTO dw_cfb.Endereco
-select 
-    EnderecoID,
+insert into dw_cfb.Endereco
+select
+    Bairro,
+    Rua,
+    IDMunicipio,
+    IDUF,
+    NomeMunicipio,
+    NomeUF,
+    gen_random_uuid()
+from (
+    select distinct
+        c.Bairro,
+        c.Rua,
+        m.IDMunicipio,
+        u.IDUF,
+        m.NomeMunicipio,
+        u.NomeUF
+    from
+        Cliente c
+    left join Municipio m on c.IDMunicipio = m.IDMunicipio
+    full join UF u on c.IDUF = u.IDUF
+) as distinct_combinations
+EXCEPT
+SELECT
     Bairro,
     RuaCliente,
+    IDMunicipio,
+    IDUF,
     Municipio,
     UF,
-    gen_random_uuid()
-from
-    Endereco_Completo;
+    EnderecoKey
+FROM dw_cfb.Endereco;
 
 -- dimensao Medicamento
 INSERT INTO dw_cfb.Medicamento
@@ -119,12 +115,11 @@ FROM
     CliCompraProd t 
     INNER JOIN Produto p ON t.IDProduto = p.IDProduto
     INNER JOIN Cliente c ON t.IDCliente = c.IDCliente
-    INNER JOIN Endereco_Completo e ON c.Rua = e.RuaCliente 
-                                    AND c.Bairro = e.Bairro 
-                                    AND c.IDMunicipio = e.IDMunicipio 
-                                    AND c.IDUF = e.IDUF
+    INNER JOIN dw_cfb.Endereco dwe ON c.Rua = dwe.RuaCliente 
+                                    AND c.Bairro = dwe.Bairro 
+                                    AND c.IDMunicipio = dwe.IDMunicipio 
+                                    AND c.IDUF = dwe.IDUF
     INNER JOIN dw_cfb.Cliente dwc ON dwc.ClienteID = c.IDCliente
-    INNER JOIN dw_cfb.Endereco dwe ON dwe.EnderecoID = e.EnderecoID
     INNER JOIN dw_cfb.Medicamento dwp ON dwp.ProdutoID = p.IDProduto
     INNER JOIN dw_cfb.Calendario dwcal ON dwcal.DataCompleta = CAST(t.DataCompra AS DATE)
 EXCEPT
