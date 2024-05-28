@@ -18,6 +18,7 @@ CREATE TABLE audit.ins_CliCompraProd AS SELECT * FROM oper_cfb.CliCompraProd WHE
 CREATE TABLE audit.ins_Cliente AS SELECT * FROM oper_cfb.Cliente WHERE 1=0;
 CREATE TABLE audit.ins_Produto AS SELECT * FROM oper_cfb.Produto WHERE 1=0;
 CREATE TABLE audit.ins_ProdCateg AS SELECT * FROM oper_cfb.ProdCateg WHERE 1=0;
+CREATE TABLE audit.ins_Categoria AS SELECT * FROM oper_cfb.Categoria WHERE 1=0;
 
 ------------------------------------------------- função geral 
 CREATE OR REPLACE FUNCTION audit.if_modified_func() RETURNS TRIGGER AS $body$
@@ -60,6 +61,26 @@ $body$
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = pg_catalog, audit;
+
+CREATE TRIGGER CliCompraProd_if_modified_trg
+AFTER INSERT OR UPDATE OR DELETE ON oper_cfb.CliCompraProd
+FOR EACH ROW EXECUTE FUNCTION audit.if_modified_func();
+
+CREATE TRIGGER Cliente_insert_if_modified_trg
+AFTER INSERT OR UPDATE OR DELETE ON oper_cfb.Cliente
+FOR EACH ROW EXECUTE FUNCTION audit.if_modified_func();
+
+CREATE TRIGGER Produto_insert_if_modified_trg
+AFTER INSERT OR UPDATE OR DELETE ON oper_cfb.Produto
+FOR EACH ROW EXECUTE FUNCTION audit.if_modified_func();
+
+CREATE TRIGGER ProdCateg_insert_if_modified_trg
+AFTER INSERT ON oper_cfb.ProdCateg
+FOR EACH ROW EXECUTE FUNCTION audit.if_modified_func();
+
+CREATE TRIGGER Categoria_insert_if_modified_trg
+AFTER INSERT ON oper_cfb.Categoria
+FOR EACH ROW EXECUTE FUNCTION audit.if_modified_func();
 
 ---------------------------------------------------------- trigger especifico CliCompraProd
 
@@ -189,6 +210,37 @@ CREATE TRIGGER ProdCateg_insert_trg
 AFTER INSERT ON oper_cfb.ProdCateg
 FOR EACH ROW EXECUTE FUNCTION audit.ins_ProdCateg_func();
 
+---------------------------------------------------------- trigger especifico Categoria
+CREATE OR REPLACE FUNCTION audit.ins_Categoria_func() RETURNS trigger AS $$
+BEGIN
+    IF (TG_OP = 'INSERT') THEN
+        INSERT INTO audit.ins_Categoria (IDCategoria, NomeCategoria)
+        VALUES (NEW.IDCategoria, NEW.NomeCategoria);
+        RETURN NEW;
+    ELSE
+        RAISE WARNING '[AUDIT.INS_CATEGORIA_FUNC] - Other action occurred: %, at %', TG_OP, now();
+        RETURN NULL;
+    END IF;
+EXCEPTION
+    WHEN data_exception THEN
+        RAISE WARNING '[AUDIT.INS_CATEGORIA_FUNC] - UDF ERROR [DATA EXCEPTION] - SQLSTATE: %, SQLERRM: %', SQLSTATE, SQLERRM;
+        RETURN NULL;
+    WHEN unique_violation THEN
+        RAISE WARNING '[AUDIT.INS_CATEGORIA_FUNC] - UDF ERROR [UNIQUE] - SQLSTATE: %, SQLERRM: %', SQLSTATE, SQLERRM;
+        RETURN NULL;
+    WHEN OTHERS THEN
+        RAISE WARNING '[AUDIT.INS_CATEGORIA_FUNC] - UDF ERROR [OTHER] - SQLSTATE: %, SQLERRM: %', SQLSTATE, SQLERRM;
+        RETURN NULL;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, audit;
+
+-- Cria o trigger
+DROP TRIGGER IF EXISTS Categoria_insert_trg ON oper_cfb.Categoria;
+
+CREATE TRIGGER Categoria_insert_trg
+AFTER INSERT ON oper_cfb.Categoria
+FOR EACH ROW EXECUTE FUNCTION audit.ins_Categoria_func();
+
 ------------------------------------------ atualizações DW
 
 SET search_path = oper_cfb;
@@ -197,8 +249,10 @@ INSERT INTO UF (IDUF, NomeUF) VALUES ('RS', 'Rio Grande do Sul');
 INSERT INTO Municipio (IDMunicipio, NomeMunicipio, IDUF) VALUES (10, 'Cachoeirinha', 'RS');
 INSERT INTO Cliente (Bairro, Rua, NomeCliente, Senha, IDCliente, EmailCliente, IDMunicipio, IDUF) VALUES ('Morada do Vale', 'Morada do Vale', 'Júlio Chavez', '****', 100, 'julio.cesar.chaves@prof.fgv.edu.br', 10, 'RS');
 INSERT INTO Cliente_TelefoneCliente (TelefoneCliente, IDCliente) VALUES (991120291, 100);
-INSERT INTO Produto (IDProduto, PrecVenda, NomeProduto, DescrProd, DtValidade, IDEstoque, IDCliente) VALUES (69, 500.00, 'Trembolona', 'Anabolizante', '1978-10-10', 2, 100);
+INSERT INTO Produto (IDProduto, PrecVenda, NomeProduto, DescrProd, DtValidade, IDEstoque, IDCliente) VALUES (50, 500.00, 'Trembolona', 'Anabolizante', '1978-10-10', 2, 100);
 INSERT INTO CliCompraProd (Quantidade, IDCompra, DataCompra, IDCliente, IDProduto) VALUES (999, 15, '2030-05-30', 100, 50);
+INSERT INTO Categoria (IDCategoria, NomeCategoria) VALUES (6, 'Anabolizante');
+INSERT INTO ProdCateg (IDProduto, IDCategoria) VALUES (50, 6); 
 
 set search_path=oper_cfb;
 
@@ -249,6 +303,13 @@ from
     audit.ins_Produto p;
 
 -- Atualiza as Categorias
+INSERT INTO dw_cfb.Categoria
+select 
+    ctg.IDCategoria,
+    ctg.NomeCategoria
+from 
+    audit.ins_Categoria ctg;
+
 INSERT INTO dw_cfb.ProdCateg
 select
     dwm.ProdutoKey,
