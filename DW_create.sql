@@ -23,6 +23,7 @@ CREATE TABLE Endereco
   IDUF CHAR(2) NOT NULL,
   Municipio VARCHAR(255) NOT NULL,
   UF VARCHAR(100) NOT NULL,
+  PorcentagemDeIdosos DECIMAL(10,2) NOT NULL,
   EnderecoKey UUID NOT NULL,
   PRIMARY KEY (EnderecoKey)
 );

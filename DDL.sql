@@ -164,3 +164,12 @@ CREATE TABLE InteracaoMedicamentosa
   FOREIGN KEY (IDProdutoX) REFERENCES Medicamento(IDProduto),
   FOREIGN KEY (IDProdutoY) REFERENCES Medicamento(IDProduto)
 );
+
+--------------------------------------------
+
+CREATE TABLE TaxaIdosos (
+    Territorialidade VARCHAR(255),
+    Taxa_envelhecimento_2021 DECIMAL(10,2),
+    Populacao_65_anos_ou_mais_2021 INT,
+    Populacao_total_2021 INT
+);

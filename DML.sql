@@ -136,3 +136,6 @@ INSERT INTO InteracaoMedicamentosa (DescrInteracaoMedicam, IDProdutoX, IDProduto
 INSERT INTO InteracaoMedicamentosa (DescrInteracaoMedicam, IDProdutoX, IDProdutoY) VALUES ('Possível interação', 2, 4);
 INSERT INTO InteracaoMedicamentosa (DescrInteracaoMedicam, IDProdutoX, IDProdutoY) VALUES ('Possível interação', 4, 1);
 
+-----------------------------------------------------------------
+
+\copy TaxaIdosos(Territorialidade, Taxa_envelhecimento_2021, Populacao_65_anos_ou_mais_2021, Populacao_total_2021) FROM '/home/dbadmin/populacaoIdosa.CSV' DELIMITER ';' CSV HEADER;

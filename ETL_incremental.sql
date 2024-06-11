@@ -317,15 +317,18 @@ select
 from 
     audit.ins_ProdCateg cat inner join dw_cfb.Medicamento dwm on dwm.ProdutoID=cat.IDProduto;
 
+set search_path=oper_cfb;
+
 -- Atualiza o Endereco
 insert into dw_cfb.Endereco
 select
-    Bairro,
-    Rua,
-    IDMunicipio,
-    IDUF,
-    NomeMunicipio,
-    NomeUF,
+    uniq.Bairro,
+    uniq.Rua,
+    uniq.IDMunicipio,
+    uniq.IDUF,
+    uniq.NomeMunicipio,
+    uniq.NomeUF,
+    uniq.Taxa_envelhecimento_2021 as PorcentagemDeIdosos, ---------------------
     gen_random_uuid()
 from (
     select distinct
@@ -334,12 +337,14 @@ from (
         m.IDMunicipio,
         u.IDUF,
         m.NomeMunicipio,
-        u.NomeUF
+        u.NomeUF,
+        t.Taxa_envelhecimento_2021 ---------------------
     from
         audit.ins_Cliente c
     left join Municipio m on c.IDMunicipio = m.IDMunicipio
     inner join UF u on c.IDUF = u.IDUF
-) as distinct_combinations
+    LEFT JOIN TaxaIdosos t ON t.Territorialidade = u.NomeUF ---------------------
+) as uniq
 EXCEPT
 SELECT
     Bairro,
@@ -348,6 +353,7 @@ SELECT
     IDUF,
     Municipio,
     UF,
+    PorcentagemDeIdosos, ---------------------
     EnderecoKey
 FROM dw_cfb.Endereco;
 

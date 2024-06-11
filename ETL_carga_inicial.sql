@@ -11,39 +11,43 @@ select
 from
 	Cliente c left join Cliente_TelefoneCliente t on c.IDCliente = t.IDCliente;
 
--- dimensao Endereco
-insert into dw_cfb.Endereco
-select
-    Bairro,
-    Rua,
-    IDMunicipio,
-    IDUF,
-    NomeMunicipio,
-    NomeUF,
+-- dimensão Endereco
+INSERT INTO dw_cfb.Endereco
+SELECT
+    uniq.Bairro,
+    uniq.Rua,
+    uniq.IDMunicipio,
+    uniq.IDUF,
+    uniq.NomeMunicipio,
+    uniq.NomeUF,
+    uniq.Taxa_envelhecimento_2021 as PorcentagemDeIdosos, ---------------------
     gen_random_uuid()
-from (
-    select distinct
+FROM (
+    SELECT DISTINCT
         c.Bairro,
         c.Rua,
         m.IDMunicipio,
         u.IDUF,
         m.NomeMunicipio,
-        u.NomeUF
-    from
+        u.NomeUF,
+        t.Taxa_envelhecimento_2021
+    FROM
         Cliente c
-    left join Municipio m on c.IDMunicipio = m.IDMunicipio
-    full join UF u on c.IDUF = u.IDUF
-) as distinct_combinations
+    LEFT JOIN Municipio m ON c.IDMunicipio = m.IDMunicipio
+    FULL JOIN UF u ON c.IDUF = u.IDUF
+    LEFT JOIN TaxaIdosos t ON t.Territorialidade = u.NomeUF ---------------------
+) AS uniq
 EXCEPT
 SELECT
-    Bairro,
-    RuaCliente,
-    IDMunicipio,
-    IDUF,
-    Municipio,
-    UF,
-    EnderecoKey
-FROM dw_cfb.Endereco;
+    e.Bairro,
+    e.RuaCliente,
+    e.IDMunicipio,
+    e.IDUF,
+    e.Municipio,
+    e.UF,
+    e.PorcentagemDeIdosos, ---------------------
+    e.EnderecoKey
+FROM dw_cfb.Endereco e;
 
 -- dimensao Medicamento
 INSERT INTO dw_cfb.Medicamento
